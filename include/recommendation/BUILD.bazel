@@ -1,0 +1,9 @@
+package(default_visibility = ["//visibility:public"])
+
+# 有头文件后取消注释：
+# cc_library(
+#     name = "api",
+#     hdrs = glob(["*.h"]),
+#     strip_include_prefix = "/include",
+#     includes = ["../.."],
+# )

@@ -1,0 +1,7 @@
+package(default_visibility = ["//visibility:public"])
+
+# cc_test(
+#     name = "data_test",
+#     srcs = ["data_test.cpp"],
+#     deps = ["//src/data"],
+# )

@@ -1,0 +1,2 @@
+# 根 package，一般不放业务 target
+package(default_visibility = ["//visibility:public"])

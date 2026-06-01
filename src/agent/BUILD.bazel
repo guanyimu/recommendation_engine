@@ -1,0 +1,12 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "agent",
+    srcs = ["agent.cpp"],
+    hdrs = ["agent.h"],
+    includes = ["."],
+    deps = [
+        "//src/common",
+        "//src/servers/main:main_server",
+    ],
+)

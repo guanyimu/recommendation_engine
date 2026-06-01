@@ -1,0 +1,10 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "video_server",
+    srcs = ["video_server.cpp"],
+    hdrs = ["video_server.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    deps = ["//src/common"],
+)

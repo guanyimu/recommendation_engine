@@ -1,0 +1,4 @@
+# Bazel 3.5 使用 build/test，不支持 common 指令
+build --cxxopt=-std=c++17
+build --host_cxxopt=-std=c++17
+test --test_output=errors

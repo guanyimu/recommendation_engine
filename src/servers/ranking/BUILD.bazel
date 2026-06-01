@@ -1,0 +1,10 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "ranking_server",
+    srcs = ["ranking_server.cpp"],
+    hdrs = ["ranking_server.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    deps = ["//src/common"],
+)
