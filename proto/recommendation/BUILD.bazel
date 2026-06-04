@@ -1,0 +1,26 @@
+load("@rules_proto//proto:defs.bzl", "proto_library")
+load("@com_github_grpc_grpc//bazel:cc_grpc_library.bzl", "cc_grpc_library")
+
+package(default_visibility = ["//visibility:public"])
+
+proto_library(
+    name = "ranking_proto",
+    srcs = ["RankingService.proto"],
+)
+
+# Bazel 原生规则（由 grpc_deps 引入 protobuf 后可用，无需 load）
+cc_proto_library(
+    name = "ranking_cc_proto",
+    deps = [":ranking_proto"],
+)
+
+# 与 gRPC 1.41 examples/protos/BUILD 中 helloworld 写法一致
+cc_grpc_library(
+    name = "ranking_cc_grpc",
+    srcs = [":ranking_proto"],
+    grpc_only = True,
+    deps = [
+        ":ranking_cc_proto",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)

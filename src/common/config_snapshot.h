@@ -13,8 +13,8 @@ class ConfigSnapshot {
 
   static std::unique_ptr<ConfigSnapshot> LoadFromFile(const std::string& path);
 
-  std::string Get(const std::string& key,
-                  const std::string& default_value = "") const;
+  bool Has(const std::string& key) const;
+  std::string Get(const std::string& key) const;
 
  private:
   explicit ConfigSnapshot(Map kv);

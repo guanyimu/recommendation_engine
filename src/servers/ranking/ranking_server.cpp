@@ -1,7 +1,9 @@
 #include "ranking_server.h"
 
 #include <chrono>
+#include <iostream>
 #include <random>
+#include <thread>
 
 namespace recommendation {
 namespace {
@@ -17,15 +19,22 @@ std::mt19937 MakeRng() {
 
 }  // namespace
 
-RankingServer::RankingServer(const ConfigReader& config) : config_(config) {}
+RankingServer::RankingServer(GatedConfig& config) : config_(config) {}
 
 std::vector<ItemId> RankingServer::Rank(UserId user_id) const {
   (void)user_id;
 
-  const std::size_t recommend_count =
-      config_.GetSizeT("recommend_count", 8);
+  std::size_t recommend_count = 0;
+  if (!config_.RequireSizeT("recommend_count", &recommend_count)) {
+    std::cerr << "[ranking] conf 缺少 recommend_count 或值非法\n";
+    return {};
+  }
 
   std::mt19937 rng = MakeRng();
+
+  // 模拟排序服务耗时（1～2 秒）
+  std::uniform_int_distribution<int> delay_ms(1000, 2000);
+  std::this_thread::sleep_for(std::chrono::milliseconds(delay_ms(rng)));
   std::uniform_int_distribution<ItemId> dist(kItemIdMin, kItemIdMax);
 
   std::vector<ItemId> item_ids;

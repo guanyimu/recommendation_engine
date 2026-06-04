@@ -10,10 +10,12 @@ class ConfigReader {
  public:
   virtual ~ConfigReader() = default;
 
-  virtual std::string Get(const std::string& key,
-                          const std::string& default_value = "") const = 0;
+  virtual bool Has(const std::string& key) const = 0;
+  virtual std::string Get(const std::string& key) const = 0;
 
-  std::size_t GetSizeT(const std::string& key, std::size_t default_value) const;
+  // 缺少 key、值为空或非法时返回 false
+  bool RequireString(const std::string& key, std::string* out) const;
+  bool RequireSizeT(const std::string& key, std::size_t* out) const;
 };
 
 }  // namespace recommendation

@@ -27,13 +27,20 @@ bool ConfigManager::Reload() {
   return true;
 }
 
-std::string ConfigManager::Get(const std::string& key,
-                                const std::string& default_value) const {
+std::string ConfigManager::Get(const std::string& key) const {
   std::shared_lock<std::shared_mutex> lock(mutex_);
   if (!snapshot_) {
-    return default_value;
+    return "";
   }
-  return snapshot_->Get(key, default_value);
+  return snapshot_->Get(key);
+}
+
+bool ConfigManager::Has(const std::string& key) const {
+  std::shared_lock<std::shared_mutex> lock(mutex_);
+  if (!snapshot_) {
+    return false;
+  }
+  return snapshot_->Has(key);
 }
 
 }  // namespace recommendation

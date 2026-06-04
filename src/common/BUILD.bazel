@@ -1,7 +1,18 @@
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:private"])
+
+# 业务侧只能依赖 :common；其 hdrs 仅暴露 gated_config_reloader + types
+# config_manager / service_gate 等仅在 :config_internal 内，visibility 禁止外部 deps
 
 cc_library(
-    name = "common",
+    name = "types",
+    hdrs = ["types.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "config_internal",
     srcs = [
         "config_manager.cpp",
         "config_reader.cpp",
@@ -9,14 +20,37 @@ cc_library(
         "service_gate.cpp",
     ],
     hdrs = [
-        "config.h",
         "config_manager.h",
         "config_reader.h",
         "config_snapshot.h",
         "service_gate.h",
-        "types.h",
     ],
     includes = ["."],
     copts = ["-std=c++17"],
     linkopts = ["-pthread"],
+)
+
+cc_library(
+    name = "gated_config_reloader_lib",
+    srcs = ["gated_config_reloader.cpp"],
+    hdrs = ["gated_config_reloader.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    deps = [":config_internal"],
+)
+
+cc_library(
+    name = "common",
+    hdrs = [
+        "gated_config_reloader.h",
+    ],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":gated_config_reloader_lib",
+        ":types",
+    ],
 )

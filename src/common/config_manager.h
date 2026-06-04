@@ -17,8 +17,8 @@ class ConfigManager : public ConfigReader {
   bool Init(const std::string& path);
   bool Reload();
 
-  std::string Get(const std::string& key,
-                  const std::string& default_value = "") const override;
+  bool Has(const std::string& key) const override;
+  std::string Get(const std::string& key) const override;
 
   const std::string& path() const { return path_; }
 

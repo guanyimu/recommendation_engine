@@ -5,9 +5,10 @@ cc_library(
     srcs = ["main_server.cpp"],
     hdrs = ["main_server.h"],
     includes = ["."],
+    copts = ["-std=c++17"],
     deps = [
         "//src/common",
-        "//src/servers/ranking:ranking_server",
+        "//src/servers/ranking:ranking_grpc",
         "//src/servers/video:video_server",
     ],
 )

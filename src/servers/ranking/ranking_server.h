@@ -1,6 +1,6 @@
 #pragma once
 
-#include "config_reader.h"
+#include "gated_config_reloader.h"
 #include "types.h"
 
 #include <vector>
@@ -10,12 +10,12 @@ namespace recommendation {
 // 排序服务器：根据 user_id 返回推荐视频 item_id 列表
 class RankingServer {
  public:
-  explicit RankingServer(const ConfigReader& config);
+  explicit RankingServer(GatedConfig& config);
 
   std::vector<ItemId> Rank(UserId user_id) const;
 
  private:
-  const ConfigReader& config_;
+  GatedConfig& config_;
 };
 
 }  // namespace recommendation

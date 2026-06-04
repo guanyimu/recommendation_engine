@@ -1,0 +1,14 @@
+syntax = "proto3";
+package recommendation;
+
+service RankingService {
+  rpc Ranking (RankingRequest) returns (RankingReply);
+}
+
+message RankingRequest {
+  string UserId = 1;
+}
+
+message RankingReply {
+  repeated string ItemId_list = 1; 
+}

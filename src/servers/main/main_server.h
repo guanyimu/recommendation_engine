@@ -1,22 +1,23 @@
 #pragma once
 
 #include "types.h"
-#include "ranking_server.h"
 #include "video_server.h"
 
 #include <vector>
 
 namespace recommendation {
 
-// 主服务器：协调排序服务器和拉视频服务器
+class RankingGrpcClient;
+
+// 主服务器：通过 gRPC 调 Ranking，本地调 Video
 class MainServer {
  public:
-  MainServer(RankingServer& ranking_server, VideoServer& video_server);
+  MainServer(RankingGrpcClient& ranking_client, VideoServer& video_server);
 
   std::vector<Video> HandleBrowse(UserId user_id) const;
 
  private:
-  RankingServer& ranking_server_;
+  RankingGrpcClient& ranking_client_;
   VideoServer& video_server_;
 };
 

@@ -32,10 +32,13 @@ std::unique_ptr<ConfigSnapshot> ConfigSnapshot::LoadFromFile(
   return std::unique_ptr<ConfigSnapshot>(new ConfigSnapshot(std::move(kv)));
 }
 
-std::string ConfigSnapshot::Get(const std::string& key,
-                                 const std::string& default_value) const {
+std::string ConfigSnapshot::Get(const std::string& key) const {
   const auto it = kv_.find(key);
-  return it != kv_.end() ? it->second : default_value;
+  return it != kv_.end() ? it->second : "";
+}
+
+bool ConfigSnapshot::Has(const std::string& key) const {
+  return kv_.find(key) != kv_.end();
 }
 
 }  // namespace recommendation
