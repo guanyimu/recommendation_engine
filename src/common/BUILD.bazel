@@ -1,33 +1,31 @@
 package(default_visibility = ["//visibility:private"])
 
-# 业务侧只能依赖 :common；其 hdrs 仅暴露 gated_config_reloader + types
-# config_manager / service_gate 等仅在 :config_internal 内，visibility 禁止外部 deps
-
 cc_library(
-    name = "types",
-    hdrs = ["types.h"],
+    name = "logger",
+    srcs = ["logger.cpp"],
+    hdrs = ["logger.h"],
     includes = ["."],
     copts = ["-std=c++17"],
-    visibility = ["//visibility:public"],
+    linkopts = ["-pthread"],
+    deps = ["@com_github_google_glog//:glog"],
 )
 
 cc_library(
     name = "config_internal",
     srcs = [
         "config_manager.cpp",
-        "config_reader.cpp",
         "config_snapshot.cpp",
         "service_gate.cpp",
     ],
     hdrs = [
         "config_manager.h",
-        "config_reader.h",
         "config_snapshot.h",
         "service_gate.h",
     ],
     includes = ["."],
     copts = ["-std=c++17"],
     linkopts = ["-pthread"],
+    deps = [":logger"],
 )
 
 cc_library(
@@ -37,13 +35,18 @@ cc_library(
     includes = ["."],
     copts = ["-std=c++17"],
     linkopts = ["-pthread"],
-    deps = [":config_internal"],
+    deps = [
+        ":config_internal",
+        ":logger",
+    ],
 )
 
 cc_library(
     name = "common",
     hdrs = [
         "gated_config_reloader.h",
+        "logger.h",
+        "types.h",
     ],
     includes = ["."],
     copts = ["-std=c++17"],
@@ -51,6 +54,6 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":gated_config_reloader_lib",
-        ":types",
+        ":logger",
     ],
 )

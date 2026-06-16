@@ -1,46 +1,40 @@
 #include "ranking_grpc_server.h"
 
-#include <iostream>
+#include "gated_config_reloader.h"
+#include "logger.h"
+#include "ranking_gate_interceptor.h"
 
 namespace recommendation {
-namespace {
 
-bool ValidateRankingConfig(GatedConfig& config, std::string* err) {
-  std::string ranking_address;
-  std::size_t recommend_count = 0;
-  if (!config.RequireString("ranking_address", &ranking_address)) {
-    if (err) {
-      *err = "conf 缺少 ranking_address 或值为空";
-    }
-    return false;
-  }
-  if (!config.RequireSizeT("recommend_count", &recommend_count)) {
-    if (err) {
-      *err = "conf 缺少 recommend_count 或值非法";
-    }
-    return false;
-  }
-  return true;
-}
-
-}  // namespace
-
-RankingGrpcServer::RankingGrpcServer(GatedConfig& config,
-                                     std::string address)
-    : config_(config), service_(config), address_(std::move(address)) {}
+RankingGrpcServer::RankingGrpcServer(std::string address)
+    : address_(std::move(address)) {}
 
 RankingGrpcServer::~RankingGrpcServer() { Shutdown(); }
 
-void RankingGrpcServer::Run() {
+bool RankingGrpcServer::Run() {
   grpc::ServerBuilder builder;
-  builder.AddListeningPort(address_, grpc::InsecureServerCredentials());
+  builder.AddChannelArgument(GRPC_ARG_ALLOW_REUSEPORT, 0);
+
+  int bound_port = 0;
+  builder.AddListeningPort(address_, grpc::InsecureServerCredentials(),
+                           &bound_port);
+  std::vector<
+      std::unique_ptr<grpc::experimental::ServerInterceptorFactoryInterface>>
+      interceptor_factories;
+  interceptor_factories.push_back(
+      std::make_unique<GatedConfigInterceptorFactory>());
+  builder.experimental().SetInterceptorCreators(
+      std::move(interceptor_factories));
   builder.RegisterService(&service_);
   server_ = builder.BuildAndStart();
-  if (!server_) {
-    std::cerr << "[ranking] 无法监听地址: " << address_ << '\n';
-    return;
+  if (!server_ || bound_port == 0) {
+    LOG(ERROR) << "[ranking] 无法监听地址（端口可能被占用）: " << address_;
+    return false;
   }
+
+  LOG(INFO) << "[ranking] gRPC 已绑定端口 " << bound_port;
   server_->Wait();
+  return true;
 }
 
 void RankingGrpcServer::Shutdown() {
@@ -49,19 +43,20 @@ void RankingGrpcServer::Shutdown() {
     server_.reset();
   }
 }
-
+// TODO:这里reload完全没用阿
 bool RankingGrpcServer::Reload() {
-  if (!config_.Reload(ValidateRankingConfig)) {
+  GatedConfig &config = GatedConfig::Instance();
+  if (!config.Reload("configs/ranking.conf")) {
     return false;
   }
 
   std::string ranking_address;
-  std::size_t recommend_count = 0;
-  config_.RequireString("ranking_address", &ranking_address);
-  config_.RequireSizeT("recommend_count", &recommend_count);
-  std::cout << "[ranking] ranking_address=" << ranking_address
-            << " recommend_count=" << recommend_count << '\n';
+  int recommend_count = 0;
+  config.RequireString("ranking_address", ranking_address);
+  config.RequireInt("recommend_count", recommend_count);
+  LOG(INFO) << "[ranking] ranking_address=" << ranking_address
+            << " recommend_count=" << recommend_count;
   return true;
 }
 
-}  // namespace recommendation
+} // namespace recommendation

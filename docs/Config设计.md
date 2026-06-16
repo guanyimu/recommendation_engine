@@ -12,7 +12,7 @@
 |------|------|
 | 加配置项不改解析器 | 通用 `key=value` → 快照 map，新增 key 只改 conf |
 | 读配置无静默默认值 | `RequireString` / `RequireSizeT`，缺 key 或非法即失败 |
-| 可热更新 | 内部 `ConfigManager::Reload()` swap 快照 |
+| 可热更新 | 内部 `ConfigManager::Reload()` swap 快照（由 GatedConfig 持有） |
 | 更新时不接新单 | 内部 `ServiceGate` drain，对外只暴露 `GatedConfig::Reload()` |
 | 业务边界清晰 | **业务只依赖 `GatedConfig`**，不 include `ConfigReader` / `ServiceGate` |
 | 构建层强制边界 | Bazel `config_internal` 禁止外部 deps |
@@ -29,7 +29,7 @@
 对内（仅 src/common 包内，config_internal）
   ConfigReader         ← 抽象 + RequireString / RequireSizeT
   ConfigSnapshot       ← 不可变 KV，LoadFromFile
-  ConfigManager        ← 单例，Init / Reload / swap 快照
+  ConfigManager        ← 构造时 LoadFromFile，Reload 时 swap 快照
   ServiceGate          ← StopAccepting / WaitDrained / TryEnter（Guard 私有）
 ```
 
@@ -45,42 +45,39 @@ src/common/
 └── BUILD.bazel               # 见 §3
 ```
 
-### 2.1 GatedConfig（唯一对外入口）
+### 2.1 GatedConfig（进程内单例入口）
 
 ```cpp
 class GatedConfig {
  public:
-  class RequestGuard { ... };   // RPC 入口登记，替代业务侧 ServiceGate::Guard
-
+  static GatedConfig& Instance();
   static bool Init(const std::string& path);
-
-  bool Has(const std::string& key) const;
-  bool RequireString(const std::string& key, std::string* out) const;
-  bool RequireSizeT(const std::string& key, std::size_t* out) const;
-  const std::string& config_path() const;
-
-  bool Reload(Validator validate = nullptr);
+  // RequireString / RequireSizeT / Reload / RequestGuard ...
 };
 ```
 
+**一个 OS 进程一份 `GatedConfig::Instance()`**，内部**独占**一份 `ConfigManager` 与同一把 `ServiceGate`。进程内所有服务（Ranking / 以后的 Video 等）都走 `Instance()`，Reload 时整节点一起 drain、一起换快照，避免「同一进程里多个 Gate、多套配置视图」导致半更新。
+
 | API | 作用 |
 |-----|------|
-| `Init(path)` | 加载 conf，内部走 `ConfigManager::Instance().Init` |
-| `RequireString` / `RequireSizeT` | 读必填项；**无 default 参数** |
+| `Init(path)` | 构造并持有 `ConfigManager(path)` |
+| `Instance()` | 取进程内唯一 GatedConfig |
+| `HasSnapshot()` | 是否已成功加载快照（`Init` 成功后才为 true） |
+| `Has` / `Get` / `Require*` | 无快照时打 `[config]` 错误日志并失败，不静默返回默认值 |
 | `RequestGuard` | 构造时尝试接请求，Reload drain 期间 `ok()==false` |
 | `Reload(validator)` | StopAccepting → drain → swap 快照 → 可选校验 → StartAccepting |
 
-内部私有持有 `ConfigManager*` 与 `ServiceGate`（`unique_ptr`，头文件不暴露类型）。
+内部通过 `unique_ptr` 持有 `ConfigManager` 与 `ServiceGate`（头文件不暴露类型）。
 
 ### 2.2 ConfigSnapshot / ConfigManager（内部）
 
 - **Snapshot**：从文件读入全部 `key=value`，**只读**；Reload 时新建一份再 swap
-- **Manager**：进程内单例；`Get` / `Has` 走读锁；`Reload` 走写锁换 `shared_ptr<const ConfigSnapshot>`
+- **Manager**：`ConfigManager(path)` 构造时加载；`Get` / `Has` 走读锁；`Reload` 走写锁换快照
 
 ```text
-Init(path)  →  LoadFromFile → 持有 snapshot_
-Reload()    →  LoadFromFile → 写锁 swap snapshot_
-Get(key)    →  读锁 → snapshot_->Get(key)   // 无 key 返回空串
+ConfigManager(path)  →  构造时 LoadFromFile
+Reload()             →  LoadFromFile → 写锁 swap snapshot_
+Get(key)             →  读锁 → snapshot_->Get(key)
 ```
 
 ### 2.3 ServiceGate（内部）
@@ -140,29 +137,25 @@ recommend_count=8
 
 ## 5. 业务如何使用
 
-### 5.1 注入方式
+### 5.1 使用方式
 
-带 Gate 的服务（如 Ranking）构造时注入 **`GatedConfig&`**，不注入 `ConfigReader` / `ServiceGate`：
-
-```cpp
-RankingServer(GatedConfig& config);
-RankingServiceImpl(GatedConfig& config);
-RankingGrpcServer(GatedConfig& config, std::string address);
-```
-
-每次请求从 config 读，不把 `recommend_count` 拷进成员常量（支持 Reload）：
+带 Gate 的服务**不注入** `GatedConfig&`，统一 `GatedConfig::Instance()`：
 
 ```cpp
-std::size_t recommend_count = 0;
-if (!config_.RequireSizeT("recommend_count", &recommend_count)) {
-  // 打日志，返回空 / 错误
-}
+// 启动
+GatedConfig::Instance().Init("configs/ranking.conf");
+GatedConfig& config = GatedConfig::Instance();
+config.RequireString("ranking_address", &addr);
+
+// 业务 / RPC
+GatedConfig::Instance().RequireSizeT("recommend_count", &count);
+GatedConfig::RequestGuard guard;   // 默认走 Instance()
 ```
 
 ### 5.2 RPC 入口
 
 ```cpp
-GatedConfig::RequestGuard guard(config_);
+GatedConfig::RequestGuard guard;
 if (!guard.ok()) {
   return grpc::Status(UNAVAILABLE, "service not accepting requests");
 }
@@ -170,14 +163,9 @@ if (!guard.ok()) {
 
 ### 5.3 客户端进程（browse_demo）
 
-只读 conf，不走 Reload / RequestGuard：
-
 ```cpp
-GatedConfig::Init("configs/ranking.conf");
-GatedConfig config;
-config.RequireString("ranking_address", &addr);
-config.RequireSizeT("recommend_count", &count);
-RankingGrpcClient client(addr);
+GatedConfig::Instance().Init("configs/ranking.conf");
+GatedConfig::Instance().RequireString("ranking_address", &addr);
 ```
 
 ---
@@ -213,7 +201,7 @@ ranking_main / browse_demo
 
 RankingGrpcServer / RankingServiceImpl / RankingServer
         │
-        └── 仅持有 GatedConfig&
+        └── GatedConfig::Instance()（同进程同一份）
 ```
 
 ---

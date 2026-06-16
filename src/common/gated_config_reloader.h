@@ -1,55 +1,55 @@
 #pragma once
 
-#include <cstddef>
-#include <functional>
+#include "service_gate.h"
+
 #include <memory>
 #include <string>
 
 namespace recommendation {
 
 class ConfigManager;
-class ServiceGate;
 
-// 配置读 + Gate 排空 Reload 的统一入口；业务只依赖此类
 class GatedConfig {
- public:
-  using Validator =
-      std::function<bool(GatedConfig& config, std::string* err)>;
-
+public:
+  // RPC 入口由 Interceptor 构造；整个请求生命周期内 active+1，供 Reload drain。
   class RequestGuard {
-   public:
-    explicit RequestGuard(GatedConfig& config);
-    ~RequestGuard();
+  public:
+    RequestGuard();
+    ~RequestGuard() = default;
 
-    RequestGuard(const RequestGuard&) = delete;
-    RequestGuard& operator=(const RequestGuard&) = delete;
+    RequestGuard(const RequestGuard &) = delete;
+    RequestGuard &operator=(const RequestGuard &) = delete;
 
-    bool ok() const;
+    bool ok() const { return guard_.ok(); }
 
-   private:
-    struct Impl;
-    std::unique_ptr<Impl> impl_;
+  private:
+    ServiceGate::Guard guard_;
   };
 
-  static bool Init(const std::string& path);
+  static GatedConfig &Instance();
+
+  bool Init(const std::string &path);
+
+  bool HasSnapshot() const;
+
+  bool RequireString(const std::string &key, std::string &out) const;
+  bool RequireInt(const std::string &key, int &out) const;
+  const std::string &config_path() const;
+
+  bool Reload(const std::string &new_path);
+
+private:
+  friend class RequestGuard;
+
+  int wait_drained_timeout_ms_{5000};
 
   GatedConfig();
-  explicit GatedConfig(ConfigManager& config);
   ~GatedConfig();
+  GatedConfig(const GatedConfig &) = delete;
+  GatedConfig &operator=(const GatedConfig &) = delete;
 
-  GatedConfig(const GatedConfig&) = delete;
-  GatedConfig& operator=(const GatedConfig&) = delete;
-
-  bool Has(const std::string& key) const;
-  bool RequireString(const std::string& key, std::string* out) const;
-  bool RequireSizeT(const std::string& key, std::size_t* out) const;
-  const std::string& config_path() const;
-
-  bool Reload(Validator validate = nullptr);
-
- private:
-  ConfigManager* config_;
+  std::unique_ptr<ConfigManager> config_manager_;
   std::unique_ptr<ServiceGate> gate_;
 };
 
-}  // namespace recommendation
+} // namespace recommendation

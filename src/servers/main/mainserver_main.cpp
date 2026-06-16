@@ -1,10 +1,10 @@
-#include "agent.h"
 #include "gated_config_reloader.h"
 #include "logger.h"
 #include "main_server.h"
 #include "ranking_grpc_client.h"
 #include "video_server.h"
 
+#include "agent.h"
 #include "types.h"
 
 #include <chrono>
@@ -15,7 +15,7 @@
 
 namespace {
 
-constexpr char config_path[] = "configs/ranking.conf";
+constexpr char kConfigPath[] = "configs/ranking.conf";
 constexpr int kAgentCount = 1000;
 
 recommendation::UserId RandomUserId() {
@@ -36,8 +36,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  if (!recommendation::GatedConfig::Instance().Init(config_path)) {
-    LOG(ERROR) << "[browse_demo] 无法加载配置: " << config_path;
+  if (!recommendation::GatedConfig::Instance().Init(kConfigPath)) {
+    LOG(ERROR) << "[mainserver] 无法加载配置: " << kConfigPath;
     recommendation::ShutdownLogging();
     return 1;
   }
@@ -50,23 +50,22 @@ int main(int argc, char** argv) {
 
   std::string ranking_address;
   if (!config.RequireString("ranking_address", ranking_address)) {
-    LOG(ERROR) << "[browse_demo] conf 缺少 ranking_address 或值为空";
+    LOG(ERROR) << "[mainserver] conf 缺少 ranking_address 或值为空";
     recommendation::ShutdownLogging();
     return 1;
   }
 
   int recommend_count = 0;
   if (!config.RequireInt("recommend_count", recommend_count)) {
-    LOG(ERROR) << "[browse_demo] conf 缺少 recommend_count 或值非法";
+    LOG(ERROR) << "[mainserver] conf 缺少 recommend_count 或值非法";
     recommendation::ShutdownLogging();
     return 1;
   }
 
-  LOG(INFO) << "[browse_demo] 请先另开终端启动 Ranking 服务: "
-            << "bazel run //src/servers/ranking:ranking_main";
-  LOG(INFO) << "[browse_demo] Ranking gRPC 地址（来自 conf）: " << ranking_address;
-  LOG(INFO) << "[browse_demo] recommend_count=" << recommend_count;
-  LOG(INFO) << "[browse_demo] 启动 " << kAgentCount << " 个 Agent 并发刷视频...";
+  LOG(INFO) << "[mainserver] 请先另开终端启动 Ranking: ./tools/run_ranking.sh";
+  LOG(INFO) << "[mainserver] Ranking gRPC 地址: " << ranking_address;
+  LOG(INFO) << "[mainserver] recommend_count=" << recommend_count;
+  LOG(INFO) << "[mainserver] 启动 " << kAgentCount << " 个 Agent 并发刷视频...";
 
   std::vector<std::thread> agents;
   agents.reserve(kAgentCount);
@@ -78,7 +77,7 @@ int main(int argc, char** argv) {
       recommendation::Agent agent(RandomUserId());
       const auto videos = agent.BrowseVideos(main_server);
 
-      LOG(INFO) << "[browse_demo] Agent #" << i << " user_id=" << agent.user_id()
+      LOG(INFO) << "[mainserver] Agent #" << i << " user_id=" << agent.user_id()
                 << " 收到 " << videos.size() << " 个视频"
                 << "（期望 " << recommend_count << "）";
     });
@@ -90,10 +89,8 @@ int main(int argc, char** argv) {
 
   const auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
       std::chrono::steady_clock::now() - start);
-  LOG(INFO) << "[browse_demo] " << kAgentCount << " 个并发请求总耗时 "
+  LOG(INFO) << "[mainserver] " << kAgentCount << " 个并发请求总耗时 "
             << elapsed.count() << " ms";
-  LOG(INFO) << "[browse_demo] （Ranking 每次随机 sleep 1～2s；若总耗时接近 1～2s 而非 "
-            << kAgentCount << "s+，说明 gRPC 并发生效）";
 
   recommendation::ShutdownLogging();
   return 0;

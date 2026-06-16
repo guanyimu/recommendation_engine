@@ -12,3 +12,16 @@ cc_library(
         "//src/servers/video:video_server",
     ],
 )
+
+cc_binary(
+    name = "mainserver_main",
+    srcs = ["mainserver_main.cpp"],
+    copts = ["-std=c++17"],
+    data = ["//configs:ranking.conf"],
+    linkopts = ["-pthread"],
+    deps = [
+        ":main_server",
+        "//src/agent",
+        "//src/common",
+    ],
+)

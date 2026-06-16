@@ -1,4 +1,2 @@
-# Bazel 3.5 使用 build/test，不支持 common 指令
-build --cxxopt=-std=c++17
-build --host_cxxopt=-std=c++17
-test --test_output=errors
+# 让 bazel run 时日志写到源码树 logs/ 下，而不是 bazel 缓存目录
+run --action_env=RE_ENGINE_ROOT

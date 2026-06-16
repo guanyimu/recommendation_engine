@@ -1,6 +1,5 @@
 #pragma once
 
-#include "config_reader.h"
 #include "config_snapshot.h"
 
 #include <memory>
@@ -9,25 +8,25 @@
 
 namespace recommendation {
 
-// 进程内单例；从文件加载 KV，Reload 时 swap 新快照
-class ConfigManager : public ConfigReader {
- public:
-  static ConfigManager& Instance();
+// 配置存储：构造时从 path 加载，Reload 时 swap 快照（由 GatedConfig 独占持有）
+class ConfigManager {
+public:
+  explicit ConfigManager(const std::string &path);
 
-  bool Init(const std::string& path);
-  bool Reload();
+  bool RequireString(const std::string &key, std::string &out) const;
+  bool RequireInt(const std::string &key, int &out) const;
+  bool HasSnapshot() const;
 
-  bool Has(const std::string& key) const override;
-  std::string Get(const std::string& key) const override;
+  bool ReloadFromFile(const std::string &new_path);
+  bool ReloadFromRAM();
 
-  const std::string& path() const { return path_; }
+  const std::string &path() const;
 
- private:
-  ConfigManager() = default;
-
+private:
   std::string path_;
-  std::shared_ptr<const ConfigSnapshot> snapshot_;
-  mutable std::shared_mutex mutex_;
+  std::unique_ptr<const ConfigSnapshot> snapshot_{nullptr};
+  std::string new_path_;
+  std::unique_ptr<const ConfigSnapshot> new_snapshot_{nullptr};
 };
 
-}  // namespace recommendation
+} // namespace recommendation
