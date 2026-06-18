@@ -1,0 +1,14 @@
+syntax = "proto3";
+package recommendation;
+
+service BrowseService {
+  rpc Browse (BrowseRequest) returns (BrowseReply);
+}
+
+message BrowseRequest {
+  string UserId = 1;
+}
+
+message BrowseReply {
+  repeated string Video_list = 1;
+}

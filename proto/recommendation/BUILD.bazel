@@ -8,19 +8,57 @@ proto_library(
     srcs = ["RankingService.proto"],
 )
 
-# Bazel 原生规则（由 grpc_deps 引入 protobuf 后可用，无需 load）
 cc_proto_library(
     name = "ranking_cc_proto",
     deps = [":ranking_proto"],
 )
 
-# 与 gRPC 1.41 examples/protos/BUILD 中 helloworld 写法一致
 cc_grpc_library(
     name = "ranking_cc_grpc",
     srcs = [":ranking_proto"],
     grpc_only = True,
     deps = [
         ":ranking_cc_proto",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)
+
+proto_library(
+    name = "video_proto",
+    srcs = ["VideoService.proto"],
+)
+
+cc_proto_library(
+    name = "video_cc_proto",
+    deps = [":video_proto"],
+)
+
+cc_grpc_library(
+    name = "video_cc_grpc",
+    srcs = [":video_proto"],
+    grpc_only = True,
+    deps = [
+        ":video_cc_proto",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)
+
+proto_library(
+    name = "browse_proto",
+    srcs = ["BrowseService.proto"],
+)
+
+cc_proto_library(
+    name = "browse_cc_proto",
+    deps = [":browse_proto"],
+)
+
+cc_grpc_library(
+    name = "browse_cc_grpc",
+    srcs = [":browse_proto"],
+    grpc_only = True,
+    deps = [
+        ":browse_cc_proto",
         "@com_github_grpc_grpc//:grpc++",
     ],
 )

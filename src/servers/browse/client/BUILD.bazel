@@ -1,0 +1,16 @@
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "browse_client",
+    srcs = ["browse_client.cpp"],
+    hdrs = ["browse_client.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/recommendation:browse_cc_grpc",
+        "//src/common",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)

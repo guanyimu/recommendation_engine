@@ -1,0 +1,40 @@
+#pragma once
+
+#include "browse_service_impl.h"
+
+#include <memory>
+#include <mutex>
+#include <string>
+
+#include <grpcpp/grpcpp.h>
+
+namespace recommendation {
+
+// 编排 ranking + video，对外提供 Browse RPC。
+class BrowseServer {
+ public:
+  BrowseServer();
+  ~BrowseServer();
+
+  BrowseServer(const BrowseServer &) = delete;
+  BrowseServer &operator=(const BrowseServer &) = delete;
+
+  bool Run();
+  void Shutdown();
+  bool Reload(const std::string &config_path);
+
+  const std::string &address() const { return address_; }
+
+ private:
+  bool StartListening();
+  void StopListeningLocked();
+
+  BrowseServiceImpl service_;
+  std::string address_;
+  std::unique_ptr<grpc::Server> server_;
+  std::mutex mu_;
+  bool shutdown_requested_{false};
+  bool restart_for_reload_{false};
+};
+
+}  // namespace recommendation

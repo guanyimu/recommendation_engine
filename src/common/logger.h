@@ -17,7 +17,8 @@
 namespace recommendation {
 
 constexpr char kRankingLogDir[] = "logs/ranking";
-constexpr char kMainServerLogDir[] = "logs/mainserver";
+constexpr char kVideoLogDir[] = "logs/video";
+constexpr char kBrowseLogDir[] = "logs/browse";
 
 struct LogOptions {
   const char *server_name = nullptr;

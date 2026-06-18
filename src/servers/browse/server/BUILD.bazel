@@ -1,0 +1,24 @@
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "browse_server",
+    srcs = [
+        "browse_engine.cpp",
+        "browse_engine.h",
+        "browse_server.cpp",
+        "browse_service_impl.cpp",
+        "browse_service_impl.h",
+    ],
+    hdrs = ["browse_server.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/recommendation:browse_cc_grpc",
+        "//src/common",
+        "//src/servers/ranking/client:ranking_client",
+        "//src/servers/video/client:video_client",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)

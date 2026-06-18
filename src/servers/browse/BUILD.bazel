@@ -1,0 +1,13 @@
+package(default_visibility = ["//visibility:private"])
+
+cc_binary(
+    name = "browse_main",
+    srcs = ["browse_main.cpp"],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//src/servers/browse/server:browse_server",
+        "//src/common",
+    ],
+)

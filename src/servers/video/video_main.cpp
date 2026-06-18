@@ -1,6 +1,6 @@
 #include "config.h"
 #include "logger.h"
-#include "ranking_server.h"
+#include "video_server.h"
 
 #include <atomic>
 #include <chrono>
@@ -22,33 +22,19 @@ void OnSigInt(int /*signo*/) { g_shutdown.store(true); }
 
 int main(int argc, char **argv) {
   recommendation::LogOptions log_opts;
-  log_opts.server_name = "ranking";
-  log_opts.log_dir = recommendation::kRankingLogDir;
+  log_opts.server_name = "video";
+  log_opts.log_dir = recommendation::kVideoLogDir;
   if (!recommendation::InitLogging(argc, argv, log_opts)) {
     return 1;
   }
 
   if (!recommendation::Config::Reload(kConfigPath)) {
-    LOG(ERROR) << "[ranking] 无法加载配置: " << kConfigPath;
+    LOG(ERROR) << "[video] 无法加载配置: " << kConfigPath;
     recommendation::ShutdownLogging();
     return 1;
   }
 
-  const std::shared_ptr<const recommendation::ConfigSnapshot> snap =
-      recommendation::Config::GetSnapshot();
-  if (!snap) {
-    LOG(ERROR) << "[ranking] 配置快照为空";
-    recommendation::ShutdownLogging();
-    return 1;
-  }
-
-  int recommend_count = 0;
-  if (!snap->RequireNonNegativeInt("recommend_count", recommend_count)) {
-    recommendation::ShutdownLogging();
-    return 1;
-  }
-
-  recommendation::RankingServer server;
+  recommendation::VideoServer server;
 
   std::signal(SIGHUP, OnSigHup);
   std::signal(SIGINT, OnSigInt);
@@ -63,8 +49,7 @@ int main(int argc, char **argv) {
     server.Shutdown();
   });
 
-  LOG(INFO) << "[ranking] 监听: " << server.address()
-            << " recommend_count=" << recommend_count
+  LOG(INFO) << "[video] 监听: " << server.address()
             << "（修改 conf 后 kill -HUP <pid> 触发 Reload）";
 
   if (!server.Run()) {

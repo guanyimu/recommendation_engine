@@ -1,24 +1,27 @@
 #pragma once
 
+#include "browse_client.h"
 #include "types.h"
-#include "main_server.h"
 
 #include <vector>
 
 namespace recommendation {
 
-// 智能体：模拟用户，持有 user_id，可发起刷视频请求
+// 模拟一个用户终端：持有自己的 BrowseClient
 class Agent {
  public:
   explicit Agent(UserId user_id);
 
+  Agent(const Agent &) = delete;
+  Agent &operator=(const Agent &) = delete;
+
   UserId user_id() const { return user_id_; }
 
-  // 刷视频：请求主服务器，返回视频列表
-  std::vector<Video> BrowseVideos(const MainServer& main_server) const;
+  std::vector<Video> BrowseVideos();
 
  private:
   UserId user_id_;
+  BrowseClient browse_client_;
 };
 
 }  // namespace recommendation

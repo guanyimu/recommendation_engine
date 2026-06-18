@@ -1,10 +1,13 @@
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
-    name = "video_server",
-    srcs = ["video_server.cpp"],
-    hdrs = ["video_server.h"],
-    includes = ["."],
+cc_binary(
+    name = "video_main",
+    srcs = ["video_main.cpp"],
     copts = ["-std=c++17"],
-    deps = ["//src/common"],
+    data = ["//configs:services.conf"],
+    linkopts = ["-pthread"],
+    deps = [
+        "//src/servers/video/server:video_server",
+        "//src/common",
+    ],
 )

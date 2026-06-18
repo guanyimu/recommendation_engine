@@ -1,47 +1,13 @@
 package(default_visibility = ["//visibility:public"])
 
-cc_library(
-    name = "ranking_server",
-    srcs = ["ranking_server.cpp"],
-    hdrs = ["ranking_server.h"],
-    includes = ["."],
-    copts = ["-std=c++17"],
-    deps = ["//src/common"],
-)
-
-cc_library(
-    name = "ranking_grpc",
-    srcs = [
-        "ranking_gate_interceptor.cpp",
-        "ranking_grpc_client.cpp",
-        "ranking_grpc_server.cpp",
-        "ranking_service_impl.cpp",
-    ],
-    hdrs = [
-        "ranking_gate_interceptor.h",
-        "ranking_grpc_client.h",
-        "ranking_grpc_server.h",
-        "ranking_service_impl.h",
-    ],
-    includes = ["."],
-    copts = ["-std=c++17"],
-    linkopts = ["-pthread"],
-    deps = [
-        ":ranking_server",
-        "//proto/recommendation:ranking_cc_grpc",
-        "//src/common:common",
-        "@com_github_grpc_grpc//:grpc++",
-    ],
-)
-
 cc_binary(
     name = "ranking_main",
     srcs = ["ranking_main.cpp"],
     copts = ["-std=c++17"],
-    data = ["//configs:ranking.conf"],
+    data = ["//configs:services.conf"],
     linkopts = ["-pthread"],
     deps = [
-        ":ranking_grpc",
+        "//src/servers/ranking/server:ranking_server",
         "//src/common",
     ],
 )

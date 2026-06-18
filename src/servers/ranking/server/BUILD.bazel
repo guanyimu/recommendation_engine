@@ -1,0 +1,22 @@
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "ranking_server",
+    srcs = [
+        "ranking_engine.cpp",
+        "ranking_engine.h",
+        "ranking_server.cpp",
+        "ranking_service_impl.cpp",
+        "ranking_service_impl.h",
+    ],
+    hdrs = ["ranking_server.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/recommendation:ranking_cc_grpc",
+        "//src/common",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)

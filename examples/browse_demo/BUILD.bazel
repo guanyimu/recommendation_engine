@@ -4,13 +4,10 @@ cc_binary(
     name = "browse_demo",
     srcs = ["main.cpp"],
     copts = ["-std=c++17"],
-    data = ["//configs:ranking.conf"],
+    data = ["//configs:services.conf"],
     linkopts = ["-pthread"],
     deps = [
         "//src/agent",
         "//src/common",
-        "//src/servers/main:main_server",
-        "//src/servers/ranking:ranking_grpc",
-        "//src/servers/video:video_server",
     ],
 )

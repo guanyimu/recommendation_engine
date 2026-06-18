@@ -1,0 +1,15 @@
+syntax = "proto3";
+package recommendation;
+
+service VideoService {
+  rpc Fetch (FetchRequest) returns (FetchReply);
+}
+
+message FetchRequest {
+  string UserId = 1;
+  repeated string ItemId_list = 2;
+}
+
+message FetchReply {
+  repeated string Video_list = 1;
+}

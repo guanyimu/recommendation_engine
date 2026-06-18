@@ -1,9 +1,6 @@
 #include "agent.h"
-#include "gated_config_reloader.h"
+#include "config.h"
 #include "logger.h"
-#include "main_server.h"
-#include "ranking_grpc_client.h"
-#include "video_server.h"
 
 #include "types.h"
 
@@ -15,7 +12,7 @@
 
 namespace {
 
-constexpr char config_path[] = "configs/ranking.conf";
+constexpr char kConfigPath[] = "configs/services.conf";
 constexpr int kAgentCount = 1000;
 
 recommendation::UserId RandomUserId() {
@@ -28,43 +25,41 @@ recommendation::UserId RandomUserId() {
 
 }  // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
   recommendation::LogOptions log_opts;
-  log_opts.server_name = "mainserver";
-  log_opts.log_dir = recommendation::kMainServerLogDir;
+  log_opts.server_name = "browse_demo";
+  log_opts.log_dir = recommendation::kBrowseLogDir;
   if (!recommendation::InitLogging(argc, argv, log_opts)) {
     return 1;
   }
 
-  if (!recommendation::GatedConfig::Instance().Init(config_path)) {
-    LOG(ERROR) << "[browse_demo] 无法加载配置: " << config_path;
+  if (!recommendation::Config::Reload(kConfigPath)) {
+    LOG(ERROR) << "[browse_demo] 无法加载配置: " << kConfigPath;
     recommendation::ShutdownLogging();
     return 1;
   }
 
-  recommendation::GatedConfig& config = recommendation::GatedConfig::Instance();
+  const std::shared_ptr<const recommendation::ConfigSnapshot> snap =
+      recommendation::Config::GetSnapshot();
+  if (!snap) {
+    LOG(ERROR) << "[browse_demo] 配置快照为空";
+    recommendation::ShutdownLogging();
+    return 1;
+  }
 
-  recommendation::RankingGrpcClient ranking_client;
-  recommendation::VideoServer video_server;
-  recommendation::MainServer main_server(ranking_client, video_server);
-
-  std::string ranking_address;
-  if (!config.RequireString("ranking_address", ranking_address)) {
-    LOG(ERROR) << "[browse_demo] conf 缺少 ranking_address 或值为空";
+  std::string browse_address;
+  if (!snap->RequireString("browse_address", browse_address)) {
     recommendation::ShutdownLogging();
     return 1;
   }
 
   int recommend_count = 0;
-  if (!config.RequireInt("recommend_count", recommend_count)) {
-    LOG(ERROR) << "[browse_demo] conf 缺少 recommend_count 或值非法";
+  if (!snap->RequireNonNegativeInt("recommend_count", recommend_count)) {
     recommendation::ShutdownLogging();
     return 1;
   }
 
-  LOG(INFO) << "[browse_demo] 请先另开终端启动 Ranking 服务: "
-            << "bazel run //src/servers/ranking:ranking_main";
-  LOG(INFO) << "[browse_demo] Ranking gRPC 地址（来自 conf）: " << ranking_address;
+  LOG(INFO) << "[browse_demo] BrowseServer gRPC: " << browse_address;
   LOG(INFO) << "[browse_demo] recommend_count=" << recommend_count;
   LOG(INFO) << "[browse_demo] 启动 " << kAgentCount << " 个 Agent 并发刷视频...";
 
@@ -76,7 +71,7 @@ int main(int argc, char** argv) {
   for (int i = 0; i < kAgentCount; ++i) {
     agents.emplace_back([&, i] {
       recommendation::Agent agent(RandomUserId());
-      const auto videos = agent.BrowseVideos(main_server);
+      const auto videos = agent.BrowseVideos();
 
       LOG(INFO) << "[browse_demo] Agent #" << i << " user_id=" << agent.user_id()
                 << " 收到 " << videos.size() << " 个视频"
@@ -84,7 +79,7 @@ int main(int argc, char** argv) {
     });
   }
 
-  for (std::thread& t : agents) {
+  for (std::thread &t : agents) {
     t.join();
   }
 
@@ -92,8 +87,6 @@ int main(int argc, char** argv) {
       std::chrono::steady_clock::now() - start);
   LOG(INFO) << "[browse_demo] " << kAgentCount << " 个并发请求总耗时 "
             << elapsed.count() << " ms";
-  LOG(INFO) << "[browse_demo] （Ranking 每次随机 sleep 1～2s；若总耗时接近 1～2s 而非 "
-            << kAgentCount << "s+，说明 gRPC 并发生效）";
 
   recommendation::ShutdownLogging();
   return 0;

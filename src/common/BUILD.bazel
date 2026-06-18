@@ -11,17 +11,9 @@ cc_library(
 )
 
 cc_library(
-    name = "config_internal",
-    srcs = [
-        "config_manager.cpp",
-        "config_snapshot.cpp",
-        "service_gate.cpp",
-    ],
-    hdrs = [
-        "config_manager.h",
-        "config_snapshot.h",
-        "service_gate.h",
-    ],
+    name = "config_lib",
+    srcs = ["config.cpp"],
+    hdrs = ["config.h"],
     includes = ["."],
     copts = ["-std=c++17"],
     linkopts = ["-pthread"],
@@ -29,22 +21,9 @@ cc_library(
 )
 
 cc_library(
-    name = "gated_config_reloader_lib",
-    srcs = ["gated_config_reloader.cpp"],
-    hdrs = ["gated_config_reloader.h"],
-    includes = ["."],
-    copts = ["-std=c++17"],
-    linkopts = ["-pthread"],
-    deps = [
-        ":config_internal",
-        ":logger",
-    ],
-)
-
-cc_library(
     name = "common",
     hdrs = [
-        "gated_config_reloader.h",
+        "config.h",
         "logger.h",
         "types.h",
     ],
@@ -53,7 +32,7 @@ cc_library(
     linkopts = ["-pthread"],
     visibility = ["//visibility:public"],
     deps = [
-        ":gated_config_reloader_lib",
+        ":config_lib",
         ":logger",
     ],
 )

@@ -1,0 +1,16 @@
+package(default_visibility = ["//visibility:private"])
+
+cc_library(
+    name = "video_client",
+    srcs = ["video_client.cpp"],
+    hdrs = ["video_client.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//proto/recommendation:video_cc_grpc",
+        "//src/common",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+)

@@ -7,6 +7,6 @@ cc_library(
     includes = ["."],
     deps = [
         "//src/common",
-        "//src/servers/main:main_server",
+        "//src/servers/browse/client:browse_client",
     ],
 )
