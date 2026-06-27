@@ -12,8 +12,8 @@ cc_library(
 
 cc_library(
     name = "config_lib",
-    srcs = ["config.cpp"],
-    hdrs = ["config.h"],
+    srcs = ["config.cpp", "listen_util.cpp"],
+    hdrs = ["config.h", "listen_util.h"],
     includes = ["."],
     copts = ["-std=c++17"],
     linkopts = ["-pthread"],
@@ -24,6 +24,7 @@ cc_library(
     name = "common",
     hdrs = [
         "config.h",
+        "listen_util.h",
         "logger.h",
         "types.h",
     ],

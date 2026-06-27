@@ -1,8 +1,16 @@
 package(default_visibility = ["//visibility:public"])
 
 cc_binary(
-    name = "browse_demo",
-    srcs = ["main.cpp"],
+    name = "browse_load_test",
+    srcs = [
+        "load_options.cpp",
+        "load_options.h",
+        "main.cpp",
+        "worker.cpp",
+        "worker.h",
+        "worker_stats.cpp",
+        "worker_stats.h",
+    ],
     copts = ["-std=c++17"],
     data = ["//configs:services.conf"],
     linkopts = ["-pthread"],

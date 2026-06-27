@@ -1,4 +1,5 @@
 #include "config.h"
+#include "listen_util.h"
 #include "logger.h"
 #include "video_server.h"
 
@@ -22,8 +23,8 @@ void OnSigInt(int /*signo*/) { g_shutdown.store(true); }
 
 int main(int argc, char **argv) {
   recommendation::LogOptions log_opts;
-  log_opts.server_name = "video";
-  log_opts.log_dir = recommendation::kVideoLogDir;
+  recommendation::ApplyInstanceLogging(log_opts, "video",
+                                       recommendation::kVideoLogDir);
   if (!recommendation::InitLogging(argc, argv, log_opts)) {
     return 1;
   }

@@ -1,4 +1,5 @@
 #include "config.h"
+#include "listen_util.h"
 #include "logger.h"
 #include "browse_server.h"
 
@@ -22,8 +23,8 @@ void OnSigInt(int /*signo*/) { g_shutdown.store(true); }
 
 int main(int argc, char **argv) {
   recommendation::LogOptions log_opts;
-  log_opts.server_name = "browse";
-  log_opts.log_dir = recommendation::kBrowseLogDir;
+  recommendation::ApplyInstanceLogging(log_opts, "browse",
+                                       recommendation::kBrowseLogDir);
   if (!recommendation::InitLogging(argc, argv, log_opts)) {
     return 1;
   }

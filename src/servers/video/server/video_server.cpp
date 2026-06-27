@@ -1,6 +1,7 @@
 #include "video_server.h"
 
 #include "config.h"
+#include "listen_util.h"
 #include "logger.h"
 
 namespace recommendation {
@@ -11,7 +12,8 @@ VideoServer::VideoServer() {
     LOG(ERROR) << "[video] 配置未加载";
     return;
   }
-  if (!snap->RequireString("video_address", address_)) {
+  address_ = ResolveListenAddress(snap, "video_address");
+  if (address_.empty()) {
     LOG(ERROR) << "[video] 构造失败，监听地址未配置";
   }
 }
@@ -102,6 +104,12 @@ bool VideoServer::Reload(const std::string &config_path) {
   if (!snap) {
     LOG(ERROR) << "[video] Reload 后配置快照为空";
     return false;
+  }
+
+  if (ListenAddressFromEnv()) {
+    LOG(INFO) << "[video] Reload 完成 bind=" << address_
+              << "（RE_LISTEN_ADDRESS 固定，客户端走 conf video_address/LB）";
+    return true;
   }
 
   std::string new_address;

@@ -1,6 +1,7 @@
 #include "ranking_server.h"
 
 #include "config.h"
+#include "listen_util.h"
 #include "logger.h"
 
 namespace recommendation {
@@ -11,7 +12,8 @@ RankingServer::RankingServer() {
     LOG(ERROR) << "[ranking] 配置未加载";
     return;
   }
-  if (!snap->RequireString("ranking_address", address_)) {
+  address_ = ResolveListenAddress(snap, "ranking_address");
+  if (address_.empty()) {
     LOG(ERROR) << "[ranking] 构造失败，监听地址未配置";
   }
 }
@@ -93,13 +95,6 @@ void RankingServer::Shutdown() {
   }
 }
 
-// TODO
-// 这种reload应该也要修改，首先是conf的reload和这个reload没有必然的因果关系，不会关联调用
-// 然后是这里读取的recommend_count没用，现在是再ranking_engine又读取了一遍，所以有一次conf修改engine和server不同步的风险
-// 他应该做到比如这个是一个服务器，那所有conf中有关的函数都在这里解析，然后由他统一负责reload，这个reload也应该跟conf的reload是同步的。
-// 还有就是现在reload了不管监听地址有没有变，都重新连接，是如果地址没变这个操作很轻，还是设计问题应该判断以下用不用重连？
-// 我还有一个疑问，就是如果rpc调用在一个线程中在开着，然后这里给他server_->Shutdown()了，会怎么样，服务之间断掉还是什么
-
 bool RankingServer::Reload(const std::string &config_path) {
   if (!Config::Reload(config_path)) {
     return false;
@@ -111,13 +106,20 @@ bool RankingServer::Reload(const std::string &config_path) {
     return false;
   }
 
-  std::string new_address;
-  if (!snap->RequireString("ranking_address", new_address)) {
+  int recommend_count = 0;
+  if (!snap->RequireNonNegativeInt("recommend_count", recommend_count)) {
     return false;
   }
 
-  int recommend_count = 0;
-  if (!snap->RequireNonNegativeInt("recommend_count", recommend_count)) {
+  if (ListenAddressFromEnv()) {
+    LOG(INFO) << "[ranking] Reload 完成 bind=" << address_
+              << "（RE_LISTEN_ADDRESS 固定，客户端走 conf ranking_address/LB）"
+              << " recommend_count=" << recommend_count;
+    return true;
+  }
+
+  std::string new_address;
+  if (!snap->RequireString("ranking_address", new_address)) {
     return false;
   }
 

@@ -4,4 +4,6 @@ exports_files([
     "ranking.conf",
     "services.conf",
     "browse.conf",
+    "nginx/grpc_lb.conf",
+    "nginx/stream_lb.conf",
 ])
