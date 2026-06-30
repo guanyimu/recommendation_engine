@@ -1,7 +1,14 @@
 package(default_visibility = ["//visibility:public"])
 
-# cc_binary(
-#     name = "recommend",
-#     srcs = ["main.cpp"],
-#     deps = ["//src/core"],
-# )
+cc_binary(
+    name = "registry_ctl",
+    srcs = ["registry_ctl.cpp"],
+    copts = ["-std=c++17"],
+    data = ["//configs:services.conf"],
+    linkopts = ["-pthread"],
+    deps = [
+        "//src/common:config_lib",
+        "//src/common:registry_client",
+        "//src/common:service_names",
+    ],
+)

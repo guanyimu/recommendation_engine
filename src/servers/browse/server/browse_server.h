@@ -1,6 +1,8 @@
 #pragma once
 
 #include "browse_service_impl.h"
+#include "server_registration.h"
+#include "service_names.h"
 
 #include <memory>
 #include <mutex>
@@ -30,6 +32,7 @@ class BrowseServer {
   void StopListeningLocked();
 
   BrowseServiceImpl service_;
+  ServerRegistration registration_;
   std::string address_;
   std::unique_ptr<grpc::Server> server_;
   std::mutex mu_;

@@ -1,4 +1,78 @@
-package(default_visibility = ["//visibility:private"])
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "net_util",
+    srcs = ["net_util.cpp"],
+    hdrs = ["net_util.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "grpc_listen_util",
+    srcs = ["grpc_listen_util.cpp"],
+    hdrs = ["grpc_listen_util.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    deps = [
+        ":logger",
+        ":net_util",
+        "@com_github_grpc_grpc//:grpc++",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "http_util",
+    srcs = ["http_util.cpp"],
+    hdrs = ["http_util.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    deps = [":net_util"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "registry_client",
+    srcs = ["registry_client.cpp"],
+    hdrs = ["registry_client.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    deps = [
+        ":config_lib",
+        ":http_util",
+        ":logger",
+        ":net_util",
+        ":service_names",
+    ],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "service_names",
+    hdrs = ["service_names.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    visibility = ["//visibility:public"],
+)
+
+cc_library(
+    name = "server_registration",
+    srcs = ["server_registration.cpp"],
+    hdrs = ["server_registration.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    deps = [
+        ":config_lib",
+        ":logger",
+        ":net_util",
+        ":registry_client",
+        ":service_names",
+    ],
+    visibility = ["//visibility:public"],
+)
 
 cc_library(
     name = "logger",
@@ -26,6 +100,9 @@ cc_library(
         "config.h",
         "listen_util.h",
         "logger.h",
+        "registry_client.h",
+        "server_registration.h",
+        "service_names.h",
         "types.h",
     ],
     includes = ["."],
@@ -34,6 +111,10 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         ":config_lib",
+        ":grpc_listen_util",
         ":logger",
+        ":registry_client",
+        ":server_registration",
+        ":service_names",
     ],
 )

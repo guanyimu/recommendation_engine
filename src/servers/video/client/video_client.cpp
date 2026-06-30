@@ -2,6 +2,8 @@
 
 #include "config.h"
 #include "logger.h"
+#include "server_registration.h"
+#include "service_names.h"
 
 #include <chrono>
 #include <mutex>
@@ -41,7 +43,7 @@ struct VideoClient::Impl {
     if (previous_target.empty()) {
       LOG(INFO) << "[video_client] 首次连接 target=" << config_target;
     } else if (previous_target != config_target) {
-      LOG(INFO) << "[video_client] video_address 变更，重连 "
+      LOG(INFO) << "[video_client] video 入口变更，重连 "
                 << previous_target << " -> " << config_target;
     }
 
@@ -57,7 +59,7 @@ struct VideoClient::Impl {
 VideoClient::VideoClient() : impl_(std::make_unique<Impl>()) {
   const std::shared_ptr<const ConfigSnapshot> snap = Config::GetSnapshot();
   std::string config_target;
-  if (!snap || !snap->RequireString("video_address", config_target)) {
+  if (!snap || !ResolveServiceAddress(snap, kServiceVideo, &config_target)) {
     LOG(ERROR) << "[video_client] 构造失败，客户端未就绪";
     return;
   }
@@ -97,7 +99,7 @@ std::vector<Video> VideoClient::Fetch(UserId user_id,
   }
 
   std::string config_target;
-  if (!snap->RequireString("video_address", config_target)) {
+  if (!ResolveServiceAddress(snap, kServiceVideo, &config_target)) {
     return {};
   }
 

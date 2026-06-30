@@ -1,0 +1,42 @@
+package(default_visibility = ["//visibility:public"])
+
+cc_library(
+    name = "registry_store",
+    srcs = ["registry_store.cpp"],
+    hdrs = ["registry_store.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    deps = [
+        "//src/common:net_util",
+        "//src/common:service_names",
+    ],
+)
+
+cc_library(
+    name = "registry_http_server",
+    srcs = ["registry_http_server.cpp"],
+    hdrs = ["registry_http_server.h"],
+    includes = ["."],
+    copts = ["-std=c++17"],
+    linkopts = ["-pthread"],
+    deps = [
+        ":registry_store",
+        "//src/common:logger",
+        "//src/common:net_util",
+        "//src/common:service_names",
+    ],
+)
+
+cc_binary(
+    name = "registry_main",
+    srcs = ["registry_main.cpp"],
+    copts = ["-std=c++17"],
+    data = ["//configs:services.conf"],
+    linkopts = ["-pthread"],
+    deps = [
+        ":registry_http_server",
+        ":registry_store",
+        "//src/common",
+    ],
+)

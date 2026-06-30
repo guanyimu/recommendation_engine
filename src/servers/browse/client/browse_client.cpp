@@ -2,6 +2,8 @@
 
 #include "config.h"
 #include "logger.h"
+#include "server_registration.h"
+#include "service_names.h"
 
 #include <chrono>
 #include <mutex>
@@ -27,7 +29,7 @@ struct BrowseClient::Impl {
     if (previous_target.empty()) {
       LOG(INFO) << "[browse_client] 首次连接 target=" << config_target;
     } else if (previous_target != config_target) {
-      LOG(INFO) << "[browse_client] browse_address 变更，重连 "
+      LOG(INFO) << "[browse_client] browse 入口变更，重连 "
                 << previous_target << " -> " << config_target;
     }
 
@@ -42,7 +44,7 @@ struct BrowseClient::Impl {
 BrowseClient::BrowseClient() : impl_(std::make_unique<Impl>()) {
   const std::shared_ptr<const ConfigSnapshot> snap = Config::GetSnapshot();
   std::string config_target;
-  if (!snap || !snap->RequireString("browse_address", config_target)) {
+  if (!snap || !ResolveServiceAddress(snap, kServiceBrowse, &config_target)) {
     LOG(ERROR) << "[browse_client] 构造失败，客户端未就绪";
     return;
   }
@@ -77,7 +79,7 @@ std::vector<Video> BrowseClient::Browse(UserId user_id) {
   }
 
   std::string config_target;
-  if (!snap->RequireString("browse_address", config_target)) {
+  if (!ResolveServiceAddress(snap, kServiceBrowse, &config_target)) {
     return {};
   }
 

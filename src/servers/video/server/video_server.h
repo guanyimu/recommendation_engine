@@ -1,6 +1,8 @@
 #pragma once
 
 #include "video_service_impl.h"
+#include "server_registration.h"
+#include "service_names.h"
 
 #include <memory>
 #include <mutex>
@@ -29,6 +31,7 @@ class VideoServer {
   void StopListeningLocked();
 
   VideoServiceImpl service_;
+  ServerRegistration registration_;
   std::string address_;
   std::unique_ptr<grpc::Server> server_;
   std::mutex mu_;

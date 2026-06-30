@@ -2,6 +2,8 @@
 
 #include "config.h"
 #include "logger.h"
+#include "server_registration.h"
+#include "service_names.h"
 
 #include <chrono>
 #include <mutex>
@@ -43,7 +45,7 @@ struct RankingClient::Impl {
     if (previous_target.empty()) {
       LOG(INFO) << "[ranking_client] 首次连接 target=" << config_target;
     } else if (previous_target != config_target) {
-      LOG(INFO) << "[ranking_client] ranking_address 变更，重连 "
+      LOG(INFO) << "[ranking_client] ranking 入口变更，重连 "
                 << previous_target << " -> " << config_target;
     } else if (!had_channel) {
       LOG(INFO) << "[ranking_client] 上次连接未就绪，同地址重试 target="
@@ -64,7 +66,7 @@ struct RankingClient::Impl {
 RankingClient::RankingClient() : impl_(std::make_unique<Impl>()) {
   const std::shared_ptr<const ConfigSnapshot> snap = Config::GetSnapshot();
   std::string config_target;
-  if (!snap || !snap->RequireString("ranking_address", config_target)) {
+  if (!snap || !ResolveServiceAddress(snap, kServiceRanking, &config_target)) {
     LOG(ERROR) << "[ranking_client] 构造失败，客户端未就绪";
     return;
   }
@@ -99,7 +101,7 @@ std::vector<ItemId> RankingClient::Rank(UserId user_id) {
   }
 
   std::string config_target;
-  if (!snap->RequireString("ranking_address", config_target)) {
+  if (!ResolveServiceAddress(snap, kServiceRanking, &config_target)) {
     return {};
   }
 
